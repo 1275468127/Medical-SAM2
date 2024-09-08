@@ -21,6 +21,8 @@ from conf import settings
 #from models.discriminatorlayer import discriminator
 from func_2d.dataset import *
 from func_2d.utils import *
+from func_2d.monuseg import *
+from func_2d.cpm import *
 
 
 def main():
@@ -62,10 +64,17 @@ def main():
 
     
     # example of REFUGE dataset
-    if args.dataset == 'REFUGE':
+    if args.dataset == 'monuseg':
         '''REFUGE data'''
-        refuge_train_dataset = REFUGE(args, args.data_path, transform = transform_train, mode = 'Training')
-        refuge_test_dataset = REFUGE(args, args.data_path, transform = transform_test, mode = 'Test')
+        refuge_train_dataset = MONUSEG(args, args.data_path, transform = transform_train, mode = 'train')
+        refuge_test_dataset = MONUSEG(args, args.data_path, transform = transform_test, mode = 'test')
+
+        nice_train_loader = DataLoader(refuge_train_dataset, batch_size=args.b, shuffle=True, num_workers=2, pin_memory=True)
+        nice_test_loader = DataLoader(refuge_test_dataset, batch_size=args.b, shuffle=False, num_workers=2, pin_memory=True)
+    elif args.dataset == 'cpm':
+        '''REFUGE data'''
+        refuge_train_dataset = CPM(args, args.data_path, transform = transform_train, mode = 'train')
+        refuge_test_dataset = CPM(args, args.data_path, transform = transform_test, mode = 'test')
 
         nice_train_loader = DataLoader(refuge_train_dataset, batch_size=args.b, shuffle=True, num_workers=2, pin_memory=True)
         nice_test_loader = DataLoader(refuge_test_dataset, batch_size=args.b, shuffle=False, num_workers=2, pin_memory=True)
@@ -90,7 +99,7 @@ def main():
     best_tol = 1e4
     best_dice = 0.0
 
-
+    settings.EPOCH = 1000
     for epoch in range(settings.EPOCH):
 
         if epoch == 0:
