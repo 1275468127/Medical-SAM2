@@ -41,7 +41,8 @@ def train_sam(args, net: nn.Module, optimizer, train_loader, epoch, writer):
     epoch_loss = 0
     memory_bank_list = []
     lossfunc = criterion_G
-    feat_sizes = [(256, 256), (128, 128), (64, 64)]
+    #feat_sizes = [(256, 256), (128, 128), (64, 64)]
+    feat_sizes = [(64, 64), (32, 32), (16, 16)]
 
 
     with tqdm(total=len(train_loader), desc=f'Epoch {epoch}', unit='img') as pbar:
@@ -175,6 +176,7 @@ def train_sam(args, net: nn.Module, optimizer, train_loader, epoch, writer):
                     dense_prompt_embeddings=de, 
                     multimask_output=False, # args.multimask_output if you want multiple masks
                     repeat_image=False,  # the image is already batched
+                    cell_nums=cell_nums,
                     high_res_features = high_res_feats
                 )
             # dimension hint for your future use
@@ -286,7 +288,8 @@ def validation_sam(args, val_loader, epoch, net: nn.Module, clean_dir=True):
     # init
     lossfunc = criterion_G
     memory_bank_list = []
-    feat_sizes = [(256, 256), (128, 128), (64, 64)]
+    #feat_sizes = [(256, 256), (128, 128), (64, 64)]
+    feat_sizes = [(64, 64), (32, 32), (16, 16)]
     total_loss = 0
     total_eiou = 0
     total_dice = 0
@@ -395,6 +398,7 @@ def validation_sam(args, val_loader, epoch, net: nn.Module, clean_dir=True):
                     dense_prompt_embeddings=de, 
                     multimask_output=False, 
                     repeat_image=False,  
+                    cell_nums=torch.as_tensor([len(gt_points)]).to(gt_points.device),
                     high_res_features = high_res_feats
                 )
 

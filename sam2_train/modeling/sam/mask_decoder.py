@@ -115,6 +115,7 @@ class MaskDecoder(nn.Module):
         dense_prompt_embeddings: torch.Tensor,
         multimask_output: bool,
         repeat_image: bool,
+        cell_nums: torch.Tensor,
         high_res_features: Optional[List[torch.Tensor]] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -139,6 +140,7 @@ class MaskDecoder(nn.Module):
             sparse_prompt_embeddings=sparse_prompt_embeddings,
             dense_prompt_embeddings=dense_prompt_embeddings,
             repeat_image=repeat_image,
+            cell_nums=cell_nums,    
             high_res_features=high_res_features,
         )
 
@@ -172,6 +174,7 @@ class MaskDecoder(nn.Module):
         sparse_prompt_embeddings: torch.Tensor,
         dense_prompt_embeddings: torch.Tensor,
         repeat_image: bool,
+        cell_nums: torch.Tensor,
         high_res_features: Optional[List[torch.Tensor]] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Predicts masks. See 'forward' for more details."""
@@ -197,6 +200,7 @@ class MaskDecoder(nn.Module):
         tokens = torch.cat((output_tokens, sparse_prompt_embeddings), dim=1)
 
         # Expand per-image data in batch direction to be per-mask
+        '''
         if repeat_image:
             src = torch.repeat_interleave(image_embeddings, tokens.shape[0], dim=0)
         else:
@@ -207,6 +211,24 @@ class MaskDecoder(nn.Module):
             image_pe.size(0) == 1
         ), "image_pe should have size 1 in batch dim (from `get_dense_pe()`)"
         pos_src = torch.repeat_interleave(image_pe, tokens.shape[0], dim=0)
+        '''
+        if image_embeddings.size(0) != tokens.size(0):
+            # print(image_embeddings.shape,dense_prompt_embeddings.shape)
+            if cell_nums != None:
+                src = torch.repeat_interleave(image_embeddings, cell_nums, dim=0)
+                pos_src = torch.repeat_interleave(image_pe, cell_nums.sum(), dim=0)
+                #ds_src = torch.repeat_interleave(dense_prompt_embeddings, cell_nums, dim=0) # when have mask prompt
+                ds_src = dense_prompt_embeddings
+            else:
+                src = image_embeddings
+                pos_src = image_pe
+                ds_src = dense_prompt_embeddings
+            # ds_src = torch.repeat_interleave(dense_prompt_embeddings, cell_nums, dim=0)
+        else:
+            src = image_embeddings
+            pos_src = image_pe
+            ds_src = dense_prompt_embeddings
+        src = src + ds_src
         b, c, h, w = src.shape
 
         # Run the transformer

@@ -14,12 +14,12 @@ def parse_args():
     parser.add_argument('-val_freq',type=int,default=3,help='interval between each validation')
     parser.add_argument('-gpu', type=bool, default=True, help='use gpu or not')
     parser.add_argument('-gpu_device', type=int, default=0, help='use which gpu')
-    parser.add_argument('-image_size', type=int, default=1024, help='image_size')
-    parser.add_argument('-out_size', type=int, default=1024, help='output_size')
+    parser.add_argument('-image_size', type=int, default=256, help='image_size')
+    parser.add_argument('-out_size', type=int, default=256, help='output_size')
     parser.add_argument('-distributed', default='none' ,type=str,help='multi GPU ids to use')
     parser.add_argument('-dataset', default="cpm",type=str,help='dataset name')
     #parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project/MedSAM2-inst/checkpoints/sam2_hiera_small.pt" , help='sam checkpoint address')
-    parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project1/project/Medical-SAM2/logs/samba_train_test_2024_09_08_13_06_48/Model/latest_epoch.pth" , help='sam checkpoint address')
+    parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project1/project/Medical-SAM2/logs/samba_train_test_2024_09_08_14_52_02/Model/latest_epoch.pth" , help='sam checkpoint address')
     parser.add_argument('-sam_config', type=str, default="sam2_hiera_s" , help='sam checkpoint address')
     parser.add_argument('-video_length', type=int, default=2, help='sam checkpoint address')
     parser.add_argument('-b', type=int, default=1, help='batch size for dataloader')
@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument(
     '-data_path',
     type=str,
-    default='/data/hhb/data/cpm17',
+    default='/data/hhb/data/cpm17_256',
     help='The path of segmentation data') 
     opt = parser.parse_args()
 

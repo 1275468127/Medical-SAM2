@@ -307,6 +307,9 @@ def vis_image(imgs, pred_masks, gt_masks, save_path, reverse = False, points = N
     b,c,h,w = pred_masks.size()
     dev = pred_masks.get_device()
     row_num = min(b, 4)
+    
+    if torch.max(pred_masks) > 1 :
+        pred_masks = pred_masks > 0.5
 
     if torch.max(pred_masks) > 1 or torch.min(pred_masks) < 0:
         pred_masks = torch.sigmoid(pred_masks)
@@ -339,8 +342,12 @@ def vis_image(imgs, pred_masks, gt_masks, save_path, reverse = False, points = N
         gt_masks = gt_masks[:,0,:,:].unsqueeze(1).expand(b,3,h,w)
         if points != None:
             for i in range(b):
+                
+                points_np = points.detach().cpu().numpy()  # 分离计算图，移到 CPU，并转换为 NumPy 数组
 
-                p = np.round(points.cpu()/args.image_size * args.out_size).to(dtype = torch.int)
+                # 执行转换
+                p = np.round(points_np / args.image_size * args.out_size).astype(int)
+                #p = np.round(points.cpu()/args.image_size * args.out_size).to(dtype = torch.int)
                 
                 gt_masks[i,0,p[i,0]-2:p[i,0]+2,p[i,1]-2:p[i,1]+2] = 0.5
                 gt_masks[i,1,p[i,0]-2:p[i,0]+2,p[i,1]-2:p[i,1]+2] = 0.1
@@ -348,9 +355,11 @@ def vis_image(imgs, pred_masks, gt_masks, save_path, reverse = False, points = N
                 # gt_masks[i,0,p[i,0]-5:p[i,0]+5,p[i,1]-5:p[i,1]+5] = 0.5
                 # gt_masks[i,1,p[i,0]-5:p[i,0]+5,p[i,1]-5:p[i,1]+5] = 0.1
                 # gt_masks[i,2,p[i,0]-5:p[i,0]+5,p[i,1]-5:p[i,1]+5] = 0.4
+
+        imgs = imgs / 255.0  # 归一化到 [0, 1]
         tup = (imgs[:row_num,:,:,:],pred_masks[:row_num,:,:,:], gt_masks[:row_num,:,:,:])
         # compose = torch.cat((imgs[:row_num,:,:,:],pred_disc[:row_num,:,:,:], pred_cup[:row_num,:,:,:], gt_disc[:row_num,:,:,:], gt_cup[:row_num,:,:,:]),0)
-        compose = torch.cat(tup,0)
+        compose = torch.cat(tup,0)  
         vutils.save_image(compose, fp = save_path, nrow = row_num, padding = 10)
 
     return

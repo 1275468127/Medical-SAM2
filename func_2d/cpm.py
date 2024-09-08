@@ -37,7 +37,7 @@ class CPM(Dataset):
         self.num_mask_per_img = 150
 
         self.transform = A.Compose(
-            [A.Resize(1024,1024,p = 1)]
+            [A.Resize(256,256,p = 1)]
             + [ToTensorV2()], p=1
         )
 

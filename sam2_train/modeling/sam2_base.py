@@ -156,7 +156,8 @@ class SAM2Base(torch.nn.Module):
 
         # Part 4: SAM-style prompt encoder (for both mask and point inputs)
         # and SAM-style mask decoder for the final mask output
-        self.image_size = image_size
+        #self.image_size = image_size
+        self.image_size = 256
         self.backbone_stride = backbone_stride
         self.sam_mask_decoder_extra_args = sam_mask_decoder_extra_args
         self.pred_obj_scores = pred_obj_scores

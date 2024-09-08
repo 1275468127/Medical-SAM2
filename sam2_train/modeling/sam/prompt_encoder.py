@@ -12,7 +12,7 @@ from torch import nn
 from sam2_train.modeling.position_encoding import PositionEmbeddingRandom
 
 from sam2_train.modeling.sam2_utils import LayerNorm2d
-
+import torch.nn.functional as F
 
 class PromptEncoder(nn.Module):
     def __init__(
@@ -161,10 +161,13 @@ class PromptEncoder(nn.Module):
           torch.Tensor: dense embeddings for the masks, in the shape
             Bx(embed_dim)x(embed_H)x(embed_W)
         """
+        '''
         if batch_size == -1:
             bs = self._get_batch_size(points, boxes, masks)
         else:
             bs = batch_size
+        '''
+        bs = self._get_batch_size(points, boxes, masks)
         sparse_embeddings = torch.empty(
             (bs, 0, self.embed_dim), device=self._get_device()
         )
@@ -183,4 +186,5 @@ class PromptEncoder(nn.Module):
                 bs, -1, self.image_embedding_size[0], self.image_embedding_size[1]
             )
 
-        return sparse_embeddings, dense_embeddings
+        #return sparse_embeddings, dense_embeddings
+        return sparse_embeddings,  F.interpolate(dense_embeddings, size=(16, 16), mode='bilinear', align_corners=False)
