@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('-distributed', default='none' ,type=str,help='multi GPU ids to use')
     parser.add_argument('-dataset', default="cpm",type=str,help='dataset name')
     #parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project/MedSAM2-inst/checkpoints/sam2_hiera_small.pt" , help='sam checkpoint address')
-    parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project1/project/Medical-SAM2/logs/samba_train_test_2024_09_08_12_28_51/Model/latest_epoch.pth" , help='sam checkpoint address')
+    parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project1/project/Medical-SAM2/logs/samba_train_test_2024_09_08_13_06_48/Model/latest_epoch.pth" , help='sam checkpoint address')
     parser.add_argument('-sam_config', type=str, default="sam2_hiera_s" , help='sam checkpoint address')
     parser.add_argument('-video_length', type=int, default=2, help='sam checkpoint address')
     parser.add_argument('-b', type=int, default=1, help='batch size for dataloader')

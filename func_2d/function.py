@@ -45,18 +45,18 @@ def train_sam(args, net: nn.Module, optimizer, train_loader, epoch, writer):
 
 
     with tqdm(total=len(train_loader), desc=f'Epoch {epoch}', unit='img') as pbar:
-        for ind, pack in enumerate(train_loader):
+        for data_iter_step, (images, inst_masks,points_choose,labels_choose, points_list, labels_list , cell_nums , masks, ori_shape) in enumerate(train_loader):
+        #for ind, pack in enumerate(train_loader):
             
             to_cat_memory = []
             to_cat_memory_pos = []
             to_cat_image_embed = []
-
+            '''
             # input image and gt masks
             imgs = pack['image'].to(dtype = mask_type, device = GPUdevice)
             masks = pack['mask'].to(dtype = mask_type, device = GPUdevice)
             name = pack['image_meta_dict']['filename_or_obj']
 
-            # click prompt: unsqueeze to indicate only one click, add more click across this dimension
             if 'pt' in pack:
                 pt_temp = pack['pt'].to(device = GPUdevice)
                 pt = pt_temp.unsqueeze(1)
@@ -67,6 +67,17 @@ def train_sam(args, net: nn.Module, optimizer, train_loader, epoch, writer):
             else:
                 coords_torch = None
                 labels_torch = None
+            '''
+            imgs = images.to(device) # cpm:torch.Size([8, 3, 512, 512])   pannuke:torch.Size([16, 3, 256, 256])
+            masks = masks.to(device).unsqueeze(0).float()
+            targets = {
+                'gt_masks': masks,
+                'gt_nums': [len(points) for points in points_list],
+                'gt_points': [points.view(-1, 2).to(device).float() for points in points_list],
+                'gt_labels': [labels.to(device).long() for labels in labels_list],
+            }
+            inst_masks = inst_masks.to(device) #torch.Size([256, 256])
+            
 
             '''Train image encoder'''                    
             backbone_out = net.forward_image(imgs)
@@ -139,12 +150,9 @@ def train_sam(args, net: nn.Module, optimizer, train_loader, epoch, writer):
 
             '''prompt encoder'''         
             with torch.no_grad():
-                if (ind%5) == 0:
-                    points=(coords_torch, labels_torch) # input shape: ((batch, n, 2), (batch, n))
-                    flag = True
-                else:
-                    points=None
-                    flag = False
+                #points=(coords_torch, labels_torch)
+                points=(points_choose.squeeze(0).permute(1,0,2).to(device), labels_choose.squeeze(0).permute(1,0).to(device)) # input shape: ((batch, n, 2), (batch, n))
+                flag = True
 
                 se, de = net.sam_prompt_encoder(
                     points=points, #(coords_torch, labels_torch)
@@ -285,16 +293,16 @@ def validation_sam(args, val_loader, epoch, net: nn.Module, clean_dir=True):
 
 
     with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
-        for ind, pack in enumerate(val_loader):
+        for ind, (images,img_seg,inst_maps, type_maps,gt_points, labels, bi_masks, ori_shape,file_inds,name) in enumerate(val_loader):
+        #for ind, pack in enumerate(val_loader):
             to_cat_memory = []
             to_cat_memory_pos = []
             to_cat_image_embed = []
 
+            '''
             name = pack['image_meta_dict']['filename_or_obj']
             imgs = pack['image'].to(dtype = torch.float32, device = GPUdevice)
             masks = pack['mask'].to(dtype = torch.float32, device = GPUdevice)
-
-            
             if 'pt' in pack:
                 pt_temp = pack['pt'].to(device = GPUdevice)
                 pt = pt_temp.unsqueeze(1)
@@ -305,8 +313,10 @@ def validation_sam(args, val_loader, epoch, net: nn.Module, clean_dir=True):
             else:
                 coords_torch = None
                 labels_torch = None
-
-
+            '''
+            imgs = img_seg.to(device)
+            masks = bi_masks.to(device).unsqueeze(0).float()
+            
 
             '''test'''
             with torch.no_grad():
@@ -367,13 +377,9 @@ def validation_sam(args, val_loader, epoch, net: nn.Module, clean_dir=True):
                 high_res_feats = feats[:-1]
 
                 """ prompt encoder """
-                if (ind%5) == 0:
-                    flag = True
-                    points = (coords_torch, labels_torch)
-
-                else:
-                    flag = False
-                    points = None
+                flag = True
+                #points = (coords_torch, labels_torch)
+                points = (gt_points.to(device), labels.to(device))
 
                 se, de = net.sam_prompt_encoder(
                     points=points, 

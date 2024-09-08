@@ -23,7 +23,7 @@ from func_2d.dataset import *
 from func_2d.utils import *
 from func_2d.monuseg import *
 from func_2d.cpm import *
-
+from mmengine.config import Config
 
 def main():
     # use bfloat16 for the entire work
@@ -34,7 +34,7 @@ def main():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
 
-
+    cfgs = Config.fromfile(f'/data/hhb/project/Medical-SAM2/args.py')
     args = cfg.parse_args()
     GPUdevice = torch.device('cuda', args.gpu_device)
 
@@ -73,10 +73,10 @@ def main():
         nice_test_loader = DataLoader(refuge_test_dataset, batch_size=args.b, shuffle=False, num_workers=2, pin_memory=True)
     elif args.dataset == 'cpm':
         '''REFUGE data'''
-        refuge_train_dataset = CPM(args, args.data_path, transform = transform_train, mode = 'train')
-        refuge_test_dataset = CPM(args, args.data_path, transform = transform_test, mode = 'test')
+        refuge_train_dataset = CPM(args, cfgs, args.data_path, mode = 'train')
+        refuge_test_dataset = CPM(args, cfgs, args.data_path, mode = 'test')
 
-        nice_train_loader = DataLoader(refuge_train_dataset, batch_size=args.b, shuffle=True, num_workers=2, pin_memory=True)
+        nice_train_loader = DataLoader(refuge_train_dataset, batch_size=args.b, shuffle=False, num_workers=2, pin_memory=True)
         nice_test_loader = DataLoader(refuge_test_dataset, batch_size=args.b, shuffle=False, num_workers=2, pin_memory=True)
         '''end'''
 
