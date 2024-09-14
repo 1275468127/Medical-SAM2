@@ -1,4 +1,4 @@
-name: medsam2
+name: medsam2_untimm
 channels:
   - conda-forge
   - defaults

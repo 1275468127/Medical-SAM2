@@ -300,7 +300,54 @@ def view(tensor):
     Image.fromarray(image).show()
 
 
+import cv2
+def visualize_points_on_images(mask, points, save_path):
+    # 创建一个空白的RGB图像
+    b, c, h, w = mask.shape
+    result_img = np.zeros((h, w, 3), dtype=np.uint8)
 
+    # 判断像素值并赋予颜色
+    for i in range(h):
+        for j in range(w):
+            mask_val = mask[0][0][i, j]
+
+            if mask_val == 0:
+                result_img[i, j] = [0, 0, 0]  # 黑色
+            elif mask_val > 0:
+                result_img[i, j] = [255, 255, 255]  # 白色
+
+    points_int = np.round(points[0].detach().cpu().numpy()).astype(int)
+    radius=3 # 点的大小
+
+    for point in points_int:
+        y, x = point
+        #result_img[x, y] = [0, 255, 0]  # 绿色
+        # Calculate the bounds of the rectangle
+        x1 = max(0, x - radius)
+        x2 = min(h, x + radius + 1)
+        y1 = max(0, y - radius)
+        y2 = min(w, y + radius + 1)
+
+        # Draw the rectangle on the image
+        result_img[x1:x2, y1:y2] = [0, 255, 0]
+
+    cv2.imwrite(save_path, result_img)
+
+def get_random_color():
+    ''' generate rgb using a list comprehension '''
+    r, g, b = [random.random()*255 for i in range(3)]
+    return r, g, b
+
+def inst_image(pred_masks, save_path, reverse = False, points = None):
+    pred_labeled = pred_masks.astype(np.uint8)
+    pred_colored = np.zeros((pred_masks.shape[0], pred_masks.shape[1], 3))
+    pred_labeled_cnum = pred_labeled.max() + 1
+    for k in range(1, pred_labeled_cnum):
+        pred_colored[pred_labeled == k, :] = np.array(get_random_color())
+    filename = save_path
+    print('pred_labeled color number = %d' % (pred_labeled_cnum))
+    # misc.imsave(filename, pred_colored)
+    cv2.imwrite(filename, pred_colored)
 
 def vis_image(imgs, pred_masks, gt_masks, save_path, reverse = False, points = None):
     

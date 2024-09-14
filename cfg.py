@@ -3,6 +3,31 @@ import argparse
 #先cpm后monuseg再cpm
 def parse_args():    
     parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', default=42, type=int)
+    parser.add_argument('-print_freq', type=int, default=100, help='print_freq')
+    parser.add_argument(
+        "--model_ema_steps",
+        type=int,
+        default=1,
+        help="the number of iterations that controls how often to update the EMA model (default: 32)",
+    )
+    parser.add_argument(
+        "--model-ema", action="store_true", help="enable tracking Exponential Moving Average of model parameters"
+    )
+    parser.add_argument(
+        "--model-ema-decay",
+        type=float,
+        default=0.99,
+        help="decay factor for Exponential Moving Average of model parameters (default: 0.99)",
+    )
+    parser.add_argument('--clip-grad', type=float, default=0.1,
+                        help='Clip gradient norm (default: 0.1)')
+    parser.add_argument("--overlap", default=64, type=int, help="overlapping pixels")
+    parser.add_argument("--crop_size", default=256, type=int, help="overlapping pixels")
+    #parser.add_argument('-eval', type=str, default='', help='net type')
+    parser.add_argument('--eval', action='store_true')
+    
     parser.add_argument('-net', type=str, default='sam2', help='net type')
     parser.add_argument('-encoder', type=str, default='vit_b', help='encoder type')
     parser.add_argument('-exp_name', default='samba_train_test', type=str, help='experiment name')
@@ -19,7 +44,7 @@ def parse_args():
     parser.add_argument('-distributed', default='none' ,type=str,help='multi GPU ids to use')
     parser.add_argument('-dataset', default="cpm",type=str,help='dataset name')
     #parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project/MedSAM2-inst/checkpoints/sam2_hiera_small.pt" , help='sam checkpoint address')
-    parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project1/project/Medical-SAM2/logs/samba_train_test_2024_09_08_14_52_02/Model/latest_epoch.pth" , help='sam checkpoint address')
+    parser.add_argument('-sam_ckpt', type=str, default="/data/hhb/project1/project/Medical-SAM2/logs/samba_train_test_2024_09_14_18_01_43/Model/latest_epoch.pth" , help='sam checkpoint address')
     parser.add_argument('-sam_config', type=str, default="sam2_hiera_s" , help='sam checkpoint address')
     parser.add_argument('-video_length', type=int, default=2, help='sam checkpoint address')
     parser.add_argument('-b', type=int, default=1, help='batch size for dataloader')

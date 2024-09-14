@@ -37,8 +37,7 @@ class CPM(Dataset):
         self.num_mask_per_img = 150
 
         self.transform = A.Compose(
-            [A.Resize(256,256,p = 1)]
-            + [ToTensorV2()], p=1
+            [ToTensorV2()], p=1
         )
 
         self.transform_tmp = A.Compose(
@@ -77,13 +76,13 @@ class CPM(Dataset):
         '''
         img_tmp = self.transform2(image=img)['image']
         res = self.transform_tmp(image=img, mask=mask)
-        img = self.transform(Image.open(image_path).convert('RGB'))
-        img_, mask = list(res.values())
+        #img = self.transform(Image.open(image_path).convert('RGB'))
+        img, mask = list(res.values())
         '''
         img_tmp = self.transform2(image=img)['image']
         res = self.transform(image=img, mask=mask)
         img, mask = list(res.values())
-
+        
 
 
         ori_shape = mask.shape[:2]
