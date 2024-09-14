@@ -26,16 +26,6 @@ torch.backends.cudnn.benchmark = True
 
 
 def train_sam(args, point_net,net: nn.Module, matcher, train_loader, criterion,optimizer, epoch, writer, model_ema=None):
-    
-    # use bfloat16 for the entire notebook
-    torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-
-    if torch.cuda.get_device_properties(0).major >= 8:
-        # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-
-    
     # train mode
     point_net.train()
     net.train()
@@ -175,7 +165,7 @@ def train_sam(args, point_net,net: nn.Module, matcher, train_loader, criterion,o
             pred = F.interpolate(low_res_multimasks,size=(args.out_size,args.out_size),mode="bilinear",align_corners=False)[:, 0]
             inst_pred = combine_mask(ori_shape,nearest_points_cat,pred,values)
             high_res_multimasks = (inst_pred.copy() > 0).astype(float)
-            high_res_multimasks = torch.from_numpy(high_res_multimasks).unsqueeze(0).unsqueeze(0).to(torch.bfloat16).to(device)
+            high_res_multimasks = torch.from_numpy(high_res_multimasks).unsqueeze(0).unsqueeze(0).to(device)
 
             vis_image(images,high_res_multimasks, masks.unsqueeze(0), os.path.join('/data/hhb/project/PS-SAM2/visi/train_small1.jpg'), reverse=False, points=None)
 
@@ -189,12 +179,13 @@ def train_sam(args, point_net,net: nn.Module, matcher, train_loader, criterion,o
             # dimension hint for your future use
             # maskmem_features: torch.Size([batch, 64, 64, 64])
             # maskmem_pos_enc: [torch.Size([batch, 64, 64, 64])]
-                
-            maskmem_features = maskmem_features.to(torch.bfloat16)
-            maskmem_features = maskmem_features.to(device=GPUdevice, non_blocking=True)
-            maskmem_pos_enc = maskmem_pos_enc[0].to(torch.bfloat16)
-            maskmem_pos_enc = maskmem_pos_enc.to(device=GPUdevice, non_blocking=True)
 
+            #maskmem_features = maskmem_features.to(torch.bfloat16)
+            maskmem_features = maskmem_features
+            maskmem_features = maskmem_features.to(device=GPUdevice, non_blocking=True)
+            #maskmem_pos_enc = maskmem_pos_enc[0].to(torch.bfloat16)
+            maskmem_pos_enc = maskmem_pos_enc[0]
+            maskmem_pos_enc = maskmem_pos_enc.to(device=GPUdevice, non_blocking=True)
 
             # add single maskmem_features, maskmem_pos_enc, iou
             if len(memory_bank_list) < args.memory_bank_size:
@@ -262,16 +253,6 @@ def train_sam(args, point_net,net: nn.Module, matcher, train_loader, criterion,o
 
 
 def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_classes,iou_threshold, calc_map=True, clean_dir=True):
-
-    # use bfloat16 for the entire notebook
-    torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
-
-    if torch.cuda.get_device_properties(0).major >= 8:
-        # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-
-
     # eval mode
     point_net.eval()
     net.eval()
@@ -529,7 +510,7 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
                     # prediction
                     high_res_multimasks = (inst_pred.copy() > 0).astype(float)
 
-                    high_res_multimasks = torch.from_numpy(high_res_multimasks).unsqueeze(0).unsqueeze(0).to(torch.bfloat16).to(device)
+                    high_res_multimasks = torch.from_numpy(high_res_multimasks).unsqueeze(0).unsqueeze(0).to(device)
                 
                     GT1 = F.interpolate(torch.tensor(inst_maps).unsqueeze(0)[..., y1:y2, x1:x2].to(device), size=(args.out_size, args.out_size),
                                                         mode="bilinear", align_corners=False)
@@ -545,9 +526,11 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
                         pred_masks_high_res=high_res_multimasks,
                         is_mask_from_pts=flag)  
                         
-                    maskmem_features = maskmem_features.to(torch.bfloat16)
+                    #maskmem_features = maskmem_features.to(torch.bfloat16)
+                    maskmem_features = maskmem_features
                     maskmem_features = maskmem_features.to(device=GPUdevice, non_blocking=True)
-                    maskmem_pos_enc = maskmem_pos_enc[0].to(torch.bfloat16)
+                    #maskmem_pos_enc = maskmem_pos_enc[0].to(torch.bfloat16)
+                    maskmem_pos_enc = maskmem_pos_enc[0]
                     maskmem_pos_enc = maskmem_pos_enc.to(device=GPUdevice, non_blocking=True)
 
 

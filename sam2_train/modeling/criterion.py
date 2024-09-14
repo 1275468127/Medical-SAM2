@@ -97,6 +97,9 @@ class Criterion(nn.Module):
             self,
             outputs1, 
             targets1,
+            pred,
+            true2,
+            #outputs3,
             epoch,
 
     ):
@@ -126,9 +129,10 @@ class Criterion(nn.Module):
             'loss_reg': self.loss_reg(outputs1, targets1, indices, num_points) * 20,
             'loss_cls': self.loss_cls(outputs1, targets1, indices, num_points) * 20,
             'loss_mask': self.loss_mask(outputs1, targets1, indices, num_points) * 20,
-            #'loss_sam2': self.lossfunc(pred,true2) * 10
+            'loss_sam2': self.lossfunc(pred,true2.unsqueeze(0)) * 10,
+            'loss_focal': self.dice_loss(pred.unsqueeze(1), true2),
+            #'loss_dice': self.focal_loss(pred.unsqueeze(1), true2.unsqueeze(1)),
             #'loss_dice_semantic': self.dice_loss(pred3, targets1['gt_masks'].unsqueeze(1)), #额外加的语义loss
-            #'loss_iou': self.iou_loss(pred.unsqueeze(1), true2.float(), pred_iou)
         }
         # print(loss_dict)
         for k in loss_dict.keys():
