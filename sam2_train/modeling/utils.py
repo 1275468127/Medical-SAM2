@@ -417,7 +417,7 @@ def predict(
 
     mask = outputs['pred_masks'][0, 0].to(torch.float32).cpu().numpy() > 0
 
-    visualize_points_on_images(torch.tensor(mask).unsqueeze(0).unsqueeze(0), torch.tensor(points).unsqueeze(0).to('cuda'), os.path.join('/data/hhb/project/PS-SAM2/visi/image_point.jpg'))
+    visualize_points_on_images(torch.tensor(mask).unsqueeze(0).unsqueeze(0), torch.tensor(points).unsqueeze(0).to('cuda'), os.path.join('/data/hhb/project1/PS-SAM2/Medical-SAM2/vis/image_point.jpg'))
 
 
     if filtering:

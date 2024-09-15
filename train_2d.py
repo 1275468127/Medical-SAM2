@@ -99,8 +99,8 @@ def main():
 
     if args.eval:
         ckpt = torch.load(args.sam_ckpt, map_location="cpu")
-        model1.load_state_dict(ckpt['model1'])
-        eiou, edice = function.eval_point(args, model1, net, matcher, nice_train_loader, criterion,optimizer, settings.EPOCH, writer)
+        #model1.load_state_dict(ckpt['model1'])
+        eiou, edice = function.validation_sam(args, cfgs, nice_test_loader, settings.EPOCH, model1, net, cfgs.data.num_classes, cfgs.data.post.iou_threshold, calc_map=True)
         logger.info(f'IOU: {eiou}, DICE: {edice} || @ epoch {settings.EPOCH}.')
 
     '''begain training'''
@@ -121,11 +121,16 @@ def main():
         net.eval()
         if epoch % args.val_freq == 0 or epoch == settings.EPOCH-1:
 
-            eiou, edice = function.eval_point(args, model1, net, matcher, nice_train_loader, criterion,optimizer, epoch, writer)
-            logger.info(f'IOU: {eiou}, DICE: {edice} || @ epoch {epoch}.')
+            seg_dice,seg_aji,seg_aji_p,seg_dq,seg_sq,seg_pq = function.validation_sam(args, cfgs, nice_test_loader, epoch, model1, net, cfgs.data.num_classes, cfgs.data.post.iou_threshold, calc_map=True)
+            print("dice:",f"{seg_dice*100:.2f}" ,end=" ")
+            print("aji:",f"{seg_aji*100:.2f}" ,end=" ")
+            print("aji_p:",f"{seg_aji_p*100:.2f}" ,end=" ")
+            print("dq:",f"{seg_dq*100:.2f}" ,end=" ")
+            print("sq:",f"{seg_sq*100:.2f}" ,end=" ")
+            print("pq:",f"{seg_pq*100:.2f}" )
 
-            if edice > best_dice:
-                best_dice = edice
+            if seg_dice > best_dice:
+                best_dice = seg_dice
                 torch.save({'model': net.state_dict(), 'model1': model1.state_dict(), 'parameter': net._parameters}, os.path.join(args.path_helper['ckpt_path'], 'latest_epoch.pth'))
 
 

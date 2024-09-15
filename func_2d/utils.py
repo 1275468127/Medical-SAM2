@@ -351,6 +351,35 @@ def inst_image(pred_masks, save_path, reverse = False, points = None):
     # misc.imsave(filename, pred_colored)
     cv2.imwrite(filename, pred_colored)
 
+def get_inst_image(pred_masks): # 输入1，3，256，256
+    pred_labeled = pred_masks.squeeze(0).squeeze(0).cpu().numpy().astype(np.uint8)
+    pred_colored = np.zeros((pred_masks.shape[2], pred_masks.shape[3], 3))
+    pred_labeled_cnum = pred_labeled.max() + 1
+    for k in range(1, pred_labeled_cnum):
+        pred_colored[pred_labeled == k, :] = np.array(get_random_color())
+    return torch.tensor(pred_colored).unsqueeze(0).permute(0, 3, 1, 2)
+
+def vis_inst_image(imgs, pred_masks, gt_masks, save_path, reverse = False, points = None):
+    
+    b,c,h,w = pred_masks.size()
+    row_num = min(b, 4)
+    
+    imgs = torchvision.transforms.Resize((h,w))(imgs)
+    if imgs.size(1) == 1:
+        imgs = imgs[:,0,:,:].unsqueeze(1).expand(b,3,h,w)
+
+    imgs = imgs / 255.0  # 归一化到 [0, 1]
+    pred_masks = get_inst_image(pred_masks).to(device)
+    gt_masks = get_inst_image(gt_masks).to(device)
+    pred_masks = pred_masks / 255.0
+    gt_masks = gt_masks / 255.0
+    tup = (imgs[:row_num,:,:,:],pred_masks[:row_num,:,:,:], gt_masks[:row_num,:,:,:])
+    # compose = torch.cat((imgs[:row_num,:,:,:],pred_disc[:row_num,:,:,:], pred_cup[:row_num,:,:,:], gt_disc[:row_num,:,:,:], gt_cup[:row_num,:,:,:]),0)
+    compose = torch.cat(tup,0)
+    vutils.save_image(compose, fp = save_path, nrow = row_num, padding = 10)
+
+    return
+
 def vis_image(imgs, pred_masks, gt_masks, save_path, reverse = False, points = None):
     
     b,c,h,w = pred_masks.size()
