@@ -156,9 +156,9 @@ class CPM(Dataset):
         if self.mode != 'train':
             return img_tmp,img.to(torch.float32),inst_map, type_map.squeeze(0),prompt_points_all.squeeze(1), prompt_labels_all, binary_mask ,torch.as_tensor(ori_shape),index,path.split('.')[0]
 
-        return img.to(torch.float32), inst_map_choose.long(), prompt_points_choose, prompt_labels_choose.unsqueeze(-1),prompt_points_all.squeeze(1), prompt_labels_all, min(cell_num, self.num_mask_per_img), binary_mask ,torch.as_tensor(ori_shape)
+        # return img.to(torch.float32), inst_map_choose.long(), prompt_points_choose, prompt_labels_choose.unsqueeze(-1),prompt_points_all.squeeze(1), prompt_labels_all, min(cell_num, self.num_mask_per_img), binary_mask ,torch.as_tensor(ori_shape)
         # #return img, inst_map_all.long(), prompt_points_all, prompt_labels_all.unsqueeze(1),prompt_points_all.squeeze(1), prompt_labels_all, binary_mask 
-        # return img.to(torch.float32), inst_map_all.long(), prompt_points_all, prompt_labels_all.unsqueeze(1),prompt_points_all.squeeze(1), prompt_labels_all, cell_num,binary_mask ,torch.as_tensor(ori_shape)
+        return img.to(torch.float32), inst_map_all.long(), prompt_points_all, prompt_labels_all.unsqueeze(1),prompt_points_all.squeeze(1), prompt_labels_all, cell_num,binary_mask ,torch.as_tensor(ori_shape)
 
 
 def load_maskfile(mask_path: str):

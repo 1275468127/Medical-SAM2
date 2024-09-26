@@ -36,7 +36,8 @@ import pandas as pd
 
 
 args = cfg.parse_args()
-device = torch.device('cuda', args.gpu_device)
+
+device = torch.device('cuda:' + str(args.gpu_device) if torch.cuda.is_available() else 'cpu')
 
 
 
@@ -55,7 +56,7 @@ def get_network(args, net, use_gpu=True, gpu_device = 0, distribution = True):
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
         '''
-        net = build_sam2(args.sam_config, args.sam_ckpt, device="cuda")
+        net = build_sam2(args.sam_config, args.sam_ckpt, device=device)
 
 
     else:

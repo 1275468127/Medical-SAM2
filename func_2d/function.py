@@ -17,9 +17,8 @@ import prettytable as pt
 
 args = cfg.parse_args()
 
-GPUdevice = torch.device('cuda', args.gpu_device)
-pos_weight = torch.ones([1]).cuda(device=GPUdevice)*2
-criterion_G = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+GPUdevice = torch.device('cuda:' + str(args.gpu_device) if torch.cuda.is_available() else 'cpu')
+
 mask_type = torch.float32
 
 torch.backends.cudnn.benchmark = True
@@ -40,14 +39,14 @@ def train_sam(args, point_net, net, matcher, train_loader, criterion,optimizer, 
     # init
     epoch_loss = 0
     memory_bank_list = []
-    lossfunc = criterion_G
+
     #feat_sizes = [(256, 256), (128, 128), (64, 64)]
     feat_sizes = [(64, 64), (32, 32), (16, 16)]
 
 
     with tqdm(total=len(train_loader), desc=f'Epoch {epoch}', unit='img') as pbar:
         for data_iter_step, (images, inst_masks,points_choose,labels_choose, points_list, labels_list , cell_nums , masks, ori_shape) in enumerate(
-            metric_logger.log_every(train_loader, args.print_freq, header)):\
+            metric_logger.log_every(train_loader, args.print_freq, header)):
             
             to_cat_memory = []
             to_cat_memory_pos = []
@@ -264,7 +263,7 @@ def train_sam(args, point_net, net, matcher, train_loader, criterion,optimizer, 
 
             pbar.update()
 
-    return epoch_loss/len(train_loader)
+    return {k: v / len(train_loader) for k, v in log_info.items()}
 
 def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_classes,iou_threshold, calc_map=True, clean_dir=True):
     # eval mode
@@ -273,10 +272,8 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
 
     n_val = len(val_loader) 
     threshold = (0.1, 0.3, 0.5, 0.7, 0.9)
-    GPUdevice = torch.device('cuda:' + str(args.gpu_device))
 
     # init
-    lossfunc = criterion_G
     memory_bank_list = []
     #feat_sizes = [(256, 256), (128, 128), (64, 64)]
     feat_sizes = [(64, 64), (32, 32), (16, 16)]
@@ -428,16 +425,16 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
 
                     """ memory condition """
                     if len(memory_bank_list) == 0:
-                        vision_feats[-1] = vision_feats[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device="cuda")
-                        vision_pos_embeds[-1] = vision_pos_embeds[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device="cuda")
+                        vision_feats[-1] = vision_feats[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device=device)
+                        vision_pos_embeds[-1] = vision_pos_embeds[-1] + torch.nn.Parameter(torch.zeros(1, B, net.hidden_dim)).to(device=device)
 
                     else:
                         for element in memory_bank_list:
                             maskmem_features = element[0]
                             maskmem_pos_enc = element[1]
-                            to_cat_memory.append(maskmem_features.cuda(non_blocking=True).flatten(2).permute(2, 0, 1))
-                            to_cat_memory_pos.append(maskmem_pos_enc.cuda(non_blocking=True).flatten(2).permute(2, 0, 1))
-                            to_cat_image_embed.append((element[3]).cuda(non_blocking=True)) # image_embed
+                            to_cat_memory.append(maskmem_features.to(device, non_blocking=True).flatten(2).permute(2, 0, 1))
+                            to_cat_memory_pos.append(maskmem_pos_enc.to(device, non_blocking=True).flatten(2).permute(2, 0, 1))
+                            to_cat_image_embed.append(element[3].to(device, non_blocking=True))  # image_embed
                             
                         memory_stack_ori = torch.stack(to_cat_memory, dim=0)
                         memory_pos_stack_ori = torch.stack(to_cat_memory_pos, dim=0)
@@ -509,10 +506,10 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
                     high_res_multimasks = torch.from_numpy(high_res_multimasks).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device)
 
                     #可视化
-                    GT1 = F.interpolate(torch.tensor(inst_maps).unsqueeze(0)[..., y1:y2, x1:x2].to(device), size=(args.out_size, args.out_size),
-                                                        mode="bilinear", align_corners=False)
+                    #GT1 = F.interpolate(torch.tensor(inst_maps).unsqueeze(0)[..., y1:y2, x1:x2].to(device), size=(args.out_size, args.out_size),
+                    #                                    mode="bilinear", align_corners=False)
                     #visualize_points_on_images(GT1, sub_prompt_points.permute(1, 0, 2), os.path.join('/data/hhb/image_point.jpg'))
-                    vis_inst_image(img, torch.from_numpy(inst_pred).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), GT1, os.path.join(args.path_helper['sample_path'] + '_eval_small.jpg'), reverse=False, points=None)
+                    #vis_inst_image(img, torch.from_numpy(inst_pred).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), GT1, os.path.join(args.path_helper['sample_path'] + '_eval_small.jpg'), reverse=False, points=None)
 
                 
                     """ memory encoder """
@@ -671,7 +668,7 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
                     img_name = na
                     namecat = namecat + img_name + '+'
                 #vis_image(images_seg,torch.tensor(b_inst_map).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), os.path.join(args.path_helper['sample_path'], namecat+'epoch+' +str(epoch) + '.jpg'), reverse=False, points=None)
-                vis_inst_image(images_seg, torch.from_numpy(b_inst_map).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), os.path.join(args.path_helper['sample_path'], namecat+'epoch+' +str(epoch) + '.jpg'), reverse=False, points=None)
+                #vis_inst_image(images_seg, torch.from_numpy(b_inst_map).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), os.path.join(args.path_helper['sample_path'], namecat+'epoch+' +str(epoch) + '.jpg'), reverse=False, points=None)
                         
             pbar.update()
     

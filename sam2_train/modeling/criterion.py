@@ -41,7 +41,9 @@ class Criterion(nn.Module):
         self.focal_loss = BinaryFocalLoss()
         self.dice_loss = DiceLoss('binary')
         self.iou_loss = MaskIoULoss()
-        pos_weight = torch.ones([1]).cuda('cuda')*2
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+        pos_weight = torch.ones([1]).to(device) * 2
         self.lossfunc = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     def loss_reg(self, outputs, targets, indices, num_points):
         """ Regression loss """
