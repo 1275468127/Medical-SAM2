@@ -60,5 +60,5 @@ def parse_args():
     default='/data/hhb/data/monuseg_256',
     help='The path of segmentation data') 
     opt = parser.parse_args()
-
+    #先cpm在monuseg
     return opt

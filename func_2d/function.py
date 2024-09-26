@@ -631,24 +631,12 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
                 baji_plus_tmp  = np.nan 
                 bdice_tmp  = np.nan 
             else:
-                [bdq_tmp, bsq_tmp, bpq_tmp], _ = get_fast_pq(
-                    remap_label(inst_maps[0]),
-                    remap_label(b_inst_map)
-                )
-                bdice_tmp = get_dice_2(
-                    remap_label(inst_maps[0]),
-                    remap_label(b_inst_map)
-                )
-                baji_plus_tmp = get_fast_aji_plus(
-                    remap_label(inst_maps[0]),
-                    remap_label(b_inst_map)
-                )
-                # print(np.unique(inst_maps[0]))
-                # print(np.unique(b_inst_map))
-                baji_tmp = get_fast_aji(
-                    remap_label(inst_maps[0]),
-                    remap_label(b_inst_map)
-                )
+                GT = remap_label(inst_maps[0])
+                PRED = remap_label(b_inst_map)
+                [bdq_tmp, bsq_tmp, bpq_tmp], _ = get_fast_pq(GT, PRED)
+                bdice_tmp = get_fast_dice_2(GT, PRED)
+                baji_plus_tmp = get_fast_aji_plus(GT, PRED)
+                baji_tmp = get_fast_aji(GT, PRED)
 
                 binary_dq_scores.append(bdq_tmp)
                 binary_sq_scores.append(bsq_tmp)
