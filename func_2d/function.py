@@ -180,7 +180,7 @@ def train_sam(args, point_net, net, matcher, train_loader, criterion,optimizer, 
             high_res_multimasks = (inst_pred.copy() > 0).astype(float)
             high_res_multimasks = torch.from_numpy(high_res_multimasks).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device)
             
-            vis_image(imgs,high_res_multimasks, masks.unsqueeze(0), os.path.join(args.path_helper['sample_path'] + '_train_small1.jpg'), reverse=False, points=None)
+            #vis_image(imgs,high_res_multimasks, masks.unsqueeze(0), os.path.join(args.path_helper['sample_path'] + '_train_small1.jpg'), reverse=False, points=None)
 
             '''memory encoder'''       
             # new caluculated memory features
@@ -283,7 +283,8 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
     binary_sq_scores = []
     binary_aji_scores = []
     binary_aji_plus_scores = []
-    binary_dice_scores = []
+    binary_dice2_scores = []
+    binary_dice1_scores = []
     excel_info = []
 
     with tqdm(total=n_val, desc='Validation round', unit='batch', leave=False) as pbar:
@@ -629,12 +630,14 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
                 bsq_tmp = np.nan 
                 baji_tmp = np.nan 
                 baji_plus_tmp  = np.nan 
-                bdice_tmp  = np.nan 
+                bdice2_tmp  = np.nan 
+                bdice1_tmp  = np.nan 
             else:
                 GT = remap_label(inst_maps[0])
                 PRED = remap_label(b_inst_map)
                 [bdq_tmp, bsq_tmp, bpq_tmp], _ = get_fast_pq(GT, PRED)
-                bdice_tmp = get_fast_dice_2(GT, PRED)
+                bdice2_tmp = get_fast_dice_2(GT, PRED)
+                bdice1_tmp = get_dice_1(GT, PRED)
                 baji_plus_tmp = get_fast_aji_plus(GT, PRED)
                 baji_tmp = get_fast_aji(GT, PRED)
 
@@ -643,7 +646,8 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
 
                 binary_pq_scores.append(bpq_tmp)
                 binary_aji_plus_scores.append(baji_plus_tmp)
-                binary_dice_scores.append(bdice_tmp)
+                binary_dice2_scores.append(bdice2_tmp)
+                binary_dice1_scores.append(bdice1_tmp)
                 binary_aji_scores.append(baji_tmp)
                 excel_info.append(
                     (name,
@@ -654,20 +658,24 @@ def validation_sam(args, cfgs, val_loader, epoch, point_net, net: nn.Module,num_
                 namecat = 'Test'
                 for na in name:
                     img_name = na
-                    namecat = namecat + img_name + '+'
+                    namecat = namecat + img_name + '_'
                 #vis_image(images_seg,torch.tensor(b_inst_map).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), os.path.join(args.path_helper['sample_path'], namecat+'epoch+' +str(epoch) + '.jpg'), reverse=False, points=None)
-                #vis_inst_image(images_seg, torch.from_numpy(b_inst_map).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), os.path.join(args.path_helper['sample_path'], namecat+'epoch+' +str(epoch) + '.jpg'), reverse=False, points=None)
+                vis_inst_image(images_seg, torch.from_numpy(b_inst_map).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), os.path.join(args.path_helper['sample_path'], namecat+'epoch+' +str(epoch) + '.jpg'), reverse=False, points=None)
+                #vis_compare_image(images_seg, torch.from_numpy(b_inst_map).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), os.path.join(args.path_helper['sample_path'], namecat+'compare_epoch' +str(epoch) + '.jpg'), reverse=False, points=None)
+                vis_compare_point(images_seg, torch.from_numpy(b_inst_map).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), current_all_points, os.path.join(args.path_helper['sample_path'], namecat+'compare_point_epoch' +str(epoch) + '.jpg'), reverse=False)
+                #vis_compare_point(images_seg, torch.from_numpy(b_inst_map).to(torch.float32).unsqueeze(0).unsqueeze(0).to(device), torch.tensor(inst_maps).unsqueeze(0).to(device), final_all_ori_points, os.path.join(args.path_helper['sample_path'], namecat+'compare_point_epoch' +str(epoch) + '.jpg'), reverse=False)
                         
             pbar.update()
     
-    seg_dice = np.nanmean(binary_dice_scores)
+    seg_dice2 = np.nanmean(binary_dice2_scores)
+    seg_dice1 = np.nanmean(binary_dice1_scores)
     seg_aji = np.nanmean(binary_aji_scores)
     seg_dq = np.nanmean(binary_dq_scores)
     seg_sq = np.nanmean(binary_sq_scores)
     seg_pq = np.nanmean(binary_pq_scores)
     seg_aji_p = np.nanmean(binary_aji_plus_scores)
 
-    return seg_dice,seg_aji,seg_aji_p,seg_dq,seg_sq,seg_pq
+    return seg_dice1,seg_dice2,seg_aji,seg_aji_p,seg_dq,seg_sq,seg_pq
 
 @staticmethod
 def find_nearest_points(pred_coords, points_choose):

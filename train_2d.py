@@ -101,8 +101,11 @@ def main():
     if args.eval:
         ckpt = torch.load(args.sam_ckpt, map_location="cpu")
         model1.load_state_dict(ckpt['model1'])
-        seg_dice,seg_aji,seg_aji_p,seg_dq,seg_sq,seg_pq = function.validation_sam(args, cfgs, nice_test_loader, settings.EPOCH, model1, net, cfgs.data.num_classes, cfgs.data.post.iou_threshold, calc_map=True)
-        print("dice:",f"{seg_dice*100:.2f}" ,end=" ")
+        if 'epoch' in ckpt:
+            settings.EPOCH = ckpt['epoch']
+        seg_dice1,seg_dice2,seg_aji,seg_aji_p,seg_dq,seg_sq,seg_pq = function.validation_sam(args, cfgs, nice_test_loader, settings.EPOCH, model1, net, cfgs.data.num_classes, cfgs.data.post.iou_threshold, calc_map=True)
+        print("dice1:",f"{seg_dice1*100:.2f}" ,end=" ")
+        print("dice2:",f"{seg_dice2*100:.2f}" ,end=" ")
         print("aji:",f"{seg_aji*100:.2f}" ,end=" ")
         print("aji_p:",f"{seg_aji_p*100:.2f}" ,end=" ")
         print("dq:",f"{seg_dq*100:.2f}" ,end=" ")
@@ -115,7 +118,8 @@ def main():
     detect_loss = []
     segment_loss = []
     all_loss = []
-    dice = []
+    dice1 = []
+    dice2 = []
     aji = []
     aji_p = []
     dq = []
@@ -123,6 +127,7 @@ def main():
     pq = []
 
     best_dice = 0.0
+    best_aji = 0.0
 
     settings.EPOCH = 300
     for epoch in range(settings.EPOCH):
@@ -149,24 +154,29 @@ def main():
         net.eval()
         if epoch % args.val_freq == 0 or epoch == settings.EPOCH-1:
 
-            seg_dice,seg_aji,seg_aji_p,seg_dq,seg_sq,seg_pq = function.validation_sam(args, cfgs, nice_test_loader, epoch, model1, net, cfgs.data.num_classes, cfgs.data.post.iou_threshold, calc_map=True)
-            print("dice:",f"{seg_dice*100:.2f}" ,end=" ")
+            seg_dice1,seg_dice2,seg_aji,seg_aji_p,seg_dq,seg_sq,seg_pq = function.validation_sam(args, cfgs, nice_test_loader, epoch, model1, net, cfgs.data.num_classes, cfgs.data.post.iou_threshold, calc_map=True)
+            print("dice1:",f"{seg_dice1*100:.2f}" ,end=" ")
+            print("dice2:",f"{seg_dice2*100:.2f}" ,end=" ")
             print("aji:",f"{seg_aji*100:.2f}" ,end=" ")
             print("aji_p:",f"{seg_aji_p*100:.2f}" ,end=" ")
             print("dq:",f"{seg_dq*100:.2f}" ,end=" ")
             print("sq:",f"{seg_sq*100:.2f}" ,end=" ")
             print("pq:",f"{seg_pq*100:.2f}" )
-            dice.append(seg_dice)
+            dice1.append(seg_dice1)
+            dice2.append(seg_dice2)
             aji.append(seg_aji)
             aji_p.append(seg_aji_p)
             dq.append(seg_dq)
             sq.append(seg_sq)
             pq.append(seg_pq)
 
-            if seg_dice > best_dice:
-                best_dice = seg_dice
-                torch.save({'model': net.state_dict(), 'model1': model1.state_dict(), 'parameter': net._parameters}, os.path.join(args.path_helper['ckpt_path'], 'latest_epoch.pth'))
+            if seg_dice1 > best_dice:
+                best_dice = seg_dice1
+                torch.save({'model': net.state_dict(), 'model1': model1.state_dict(), 'parameter': net._parameters, 'epoch': epoch}, os.path.join(args.path_helper['ckpt_path'], 'base_dice_epoch.pth'))
         
+            if seg_aji > best_aji:
+                best_aji = seg_aji
+                torch.save({'model': net.state_dict(), 'model1': model1.state_dict(), 'parameter': net._parameters, 'epoch': epoch}, os.path.join(args.path_helper['ckpt_path'], 'base_aji_epoch.pth'))
 
     writer.close()
 
@@ -198,11 +208,12 @@ def main():
 
 
     # 创建图表
-    epochs = np.arange(1, len(dice) + 1)
+    epochs = np.arange(1, len(dice1) + 1)
     fig, ax2 = plt.subplots(figsize=(20, 12))
 
     # 绘制图表，包含 6 条线
-    ax2.plot(epochs, dice, marker='o', linestyle='-', color='b', label='Dice Score')
+    ax2.plot(epochs, dice1, marker='o', linestyle='-', color='b', label='Dice Score')
+    ax2.plot(epochs, dice2, marker='o', linestyle='-', color='b', label='Dice Score')
     ax2.plot(epochs, aji, marker='o', linestyle='-', color='g', label='AJI')
     ax2.plot(epochs, aji_p, marker='o', linestyle='-', color='r', label='AJI Plus')
     ax2.plot(epochs, dq, marker='o', linestyle='-', color='c', label='DQ (Detection Quality)')

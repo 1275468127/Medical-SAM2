@@ -42,7 +42,7 @@ class CPM(Dataset):
 
         self.transform_tmp = A.Compose(
           [getattr(A, tf_dict.pop('type'))(**tf_dict) for tf_dict in cfgs.data.get(mode).transform]
-           +[A.Resize(args.image_size,args.image_size,p = 1 )] + [ToTensorV2()], p=1)
+          + [ToTensorV2()], p=1)
         # self.transform = A.Compose(
         #    [getattr(A, tf_dict.pop('type'))(**tf_dict) for tf_dict in cfgs.data.get(mode).transform]
         #     + [ToTensorV2()], p=1)
@@ -73,7 +73,7 @@ class CPM(Dataset):
         #mask[mask <= 0.5] = 0
 
         # apply transform 数据预处理
-        '''
+
         img_tmp = self.transform2(image=img)['image']
         res = self.transform_tmp(image=img, mask=mask)
         #img = self.transform(Image.open(image_path).convert('RGB'))
@@ -82,7 +82,7 @@ class CPM(Dataset):
         img_tmp = self.transform2(image=img)['image']
         res = self.transform(image=img, mask=mask)
         img, mask = list(res.values())
-        
+        '''
 
 
         ori_shape = mask.shape[:2]

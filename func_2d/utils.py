@@ -305,35 +305,29 @@ def view(tensor):
 
 import cv2
 def visualize_points_on_images(mask, points, save_path):
-    # 创建一个空白的RGB图像
+    # 获取尺寸
     b, c, h, w = mask.shape
+    
+    # 将 mask 转换为 CPU 张量并转换为 NumPy 数组
+    mask_val = mask[0, 0].cpu().numpy()
+
+    # 创建一个空白的 RGB 图像
     result_img = np.zeros((h, w, 3), dtype=np.uint8)
 
-    # 判断像素值并赋予颜色
-    for i in range(h):
-        for j in range(w):
-            mask_val = mask[0][0][i, j]
+    # 使用 NumPy 的布尔索引处理 mask
+    result_img[mask_val == 0] = [0, 0, 0]  # 黑色
+    result_img[mask_val > 0] = [255, 255, 255]  # 白色
 
-            if mask_val == 0:
-                result_img[i, j] = [0, 0, 0]  # 黑色
-            elif mask_val > 0:
-                result_img[i, j] = [255, 255, 255]  # 白色
-
+    # 获取并处理 points
     points_int = np.round(points[0].detach().cpu().numpy()).astype(int)
-    radius=3 # 点的大小
+    radius = 3  # 点的半径
 
+    # 绘制绿色的点（使用 OpenCV 的 circle 函数）
     for point in points_int:
         y, x = point
-        #result_img[x, y] = [0, 255, 0]  # 绿色
-        # Calculate the bounds of the rectangle
-        x1 = max(0, x - radius)
-        x2 = min(h, x + radius + 1)
-        y1 = max(0, y - radius)
-        y2 = min(w, y + radius + 1)
+        cv2.circle(result_img, (x, y), radius, (0, 255, 0), thickness=-1)
 
-        # Draw the rectangle on the image
-        result_img[x1:x2, y1:y2] = [0, 255, 0]
-
+    # 保存结果图像
     cv2.imwrite(save_path, result_img)
 
 def get_random_color():
@@ -369,7 +363,7 @@ def vis_inst_image(imgs, pred_masks, gt_masks, save_path, reverse = False, point
     if imgs.size(1) == 1:
         imgs = imgs[:,0,:,:].unsqueeze(1).expand(b,3,h,w)
 
-    imgs = imgs / 255.0  # 归一化到 [0, 1]
+    #imgs = imgs / 255.0  # 归一化到 [0, 1]
     pred_masks = get_inst_image(pred_masks).to(device)
     gt_masks = get_inst_image(gt_masks).to(device)
     pred_masks = pred_masks / 255.0
@@ -378,6 +372,71 @@ def vis_inst_image(imgs, pred_masks, gt_masks, save_path, reverse = False, point
     # compose = torch.cat((imgs[:row_num,:,:,:],pred_disc[:row_num,:,:,:], pred_cup[:row_num,:,:,:], gt_disc[:row_num,:,:,:], gt_cup[:row_num,:,:,:]),0)
     compose = torch.cat(tup,0)
     vutils.save_image(compose, fp = save_path, nrow = row_num, padding = 10)
+
+    return
+
+def compare_and_color(pred_map, true_map):
+    b, c, h, w = pred_map.shape
+    result_img = np.zeros((h, w, 3), dtype=np.uint8)
+
+    pred_val = pred_map[0, 0].cpu().numpy()
+    true_val = true_map[0, 0].cpu().numpy()
+
+    # 条件判断并赋值，利用NumPy的布尔索引进行矢量化
+    mask_black = (pred_val == 0) & (true_val == 0)
+    mask_red = (pred_val > 0) & (true_val == 0)
+    mask_blue = (pred_val == 0) & (true_val > 0)
+    mask_green = (pred_val > 0) & (true_val > 0)
+
+    # 直接赋值
+    result_img[mask_black] = [0, 0, 0]    # 黑色
+    result_img[mask_red] = [0, 0, 255]    # 红色
+    result_img[mask_blue] = [255, 0, 0]   # 蓝色
+    result_img[mask_green] = [0, 255, 0]  # 绿色
+
+    return result_img
+
+
+def vis_compare_image(imgs, pred_masks, gt_masks, save_path, reverse = False, points = None):
+    
+    b,c,h,w = pred_masks.size()
+    row_num = min(b, 4)
+    
+    imgs = torchvision.transforms.Resize((h,w))(imgs)
+    if imgs.size(1) == 1:
+        imgs = imgs[:,0,:,:].unsqueeze(1).expand(b,3,h,w)
+
+    imgs = imgs / 255.0  # 归一化到 [0, 1]
+    
+    result_img = compare_and_color(pred_masks, gt_masks)
+
+    cv2.imwrite(save_path, result_img)
+
+    return
+
+def vis_compare_point(imgs, pred_masks, gt_masks, points, save_path, reverse = False):
+    
+    b,c,h,w = pred_masks.size()
+    row_num = min(b, 4)
+    
+    imgs = torchvision.transforms.Resize((h,w))(imgs)
+    if imgs.size(1) == 1:
+        imgs = imgs[:,0,:,:].unsqueeze(1).expand(b,3,h,w)
+
+    imgs = imgs / 255.0  # 归一化到 [0, 1]
+    
+    result_img = compare_and_color(pred_masks, gt_masks)
+
+    radius = 3  # 点的半径
+    # 绘制绿色的点（使用 OpenCV 的 circle 函数）
+    for point in points:
+        x, y = point
+        x = int(x)
+        y = int(y)
+        if 0 <= x < w and 0 <= y < h:
+            cv2.circle(result_img, (x, y), radius, (256, 256, 256), thickness=-1)
+
+    cv2.imwrite(save_path, result_img)
 
     return
 
